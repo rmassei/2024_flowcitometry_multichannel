@@ -47,6 +47,8 @@ The script was tested with the following packages
 ---
 
 ### 3. Outlook
+IMPORTANT!!!
+**PLEASE READ THE IFC PACKAGE DISCLAIMER BEFORE RUNNING THE SCRIPT!!!**
 
 The multichannel creation can be potentially run also over R.
 Please check the GitHub issue https://github.com/gitdemont/IFC/issues/5
