@@ -52,6 +52,6 @@ objectExtract(ifd = IFDs, info = metadata, mode = "gray",
               force_range = TRUE)
 
 
-ExtractMasks_toFile(raw, objects = sel, offsets = cif_offs, force_range = TRUE,
+ExtractMasks_toFile(raw, objects = sel, mode = "gray", offsets = cif_offs, force_range = TRUE,
                     write_to = "%d/%s/%s_%o_%c.tiff",
                     base64_id = TRUE, add_noise = FALSE)
