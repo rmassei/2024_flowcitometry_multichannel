@@ -108,7 +108,7 @@ def multi_channel_conversion(files_path, metadata_path, files_output):
             round += 1
 
 
-def associate_mask_idiv(user, passw, dts, path):
+def associate_mask(user, passw, dts, path):
     conn = BlitzGateway(user, passw, host="localhost", port=4064, secure=True)
     if conn.connect() is False:
         print("Not connected to OMERO instance. Please retry")
