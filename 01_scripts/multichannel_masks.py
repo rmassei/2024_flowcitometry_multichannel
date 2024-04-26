@@ -2,13 +2,15 @@ import os
 import uuid
 import json
 
-import numpy as np
+import omero_rois
 import tifffile
+import numpy as np
+import omero
 
-from omero.gateway import BlitzGateway
 from tifffile import TiffFile
-from skimage import filters
 from skimage.io import imread
+from skimage.filters import threshold_otsu
+from omero.gateway import BlitzGateway
 from ome_types import to_xml, OME
 from ome_types.model import Image, Pixels, Channel, TiffData
 
@@ -106,32 +108,42 @@ def multi_channel_conversion(files_path, metadata_path, files_output):
             round += 1
 
 
-def associate_mask(conn, dts, path, channels):
-    dataset = conn.getObject("Dataset", dts)
-    ID = []
-    for image in dataset.listChildren():
-        ID.append(image.getId())
-    mask_folder_path = path
-    os.chdir(mask_folder_path)
-    files = os.listdir(mask_folder_path)
-    for im in ID:
-        print(f"Processing Image with ID:{im}")
-        image = conn.getObject("Image", im)
-        channel = 0
-        for i in files:
-            if channel <= channels:
-                img = imread(path)
-                # Apply thresholding to convert the grayscale img to binary
-                threshold = filters.threshold_otsu(img)
-                binary_image = img >= threshold
-                # Convert binary img to binary array
-                binary_array = (binary_image / 255).astype(np.int64)
-                mask = omero_rois.mask_from_binary_image(binary_array, rgba=(255, 0, 0, 150), z=0, c=channel, t=0,
-                                                         text=f"Channel_{channel}", raise_on_no_mask=False)
-                create_roi(image, [mask])
-                channel += 1
-                os.remove(i)
-            else:
-                files = files[channels:]
-                print(f"Finish mask upload with ID:{im}")
-                break
+def associate_mask_idiv(user, passw, dts, path):
+    conn = BlitzGateway(user, passw, host="localhost", port=4064, secure=True)
+    if conn.connect() is False:
+        print("Not connected to OMERO instance. Please retry")
+    else:
+        print("Connection established. Starting Importing Mask!")
+        def create_roi(img, shapes):
+            roi = omero.model.RoiI()
+            roi.setImage(img._obj)
+            for shape in shapes:
+                roi.addShape(shape)
+            updateService.saveObject(roi)
+        dts = str(dts.replace("Dataset:", ""))
+        dataset = conn.getObject("Dataset", dts)
+        ID = []
+        for image in dataset.listChildren():
+            ID.append(image.getId())
+        os.chdir(path)
+        files = sorted(os.listdir(path), key=str.lower)
+        for im in ID:
+            updateService = conn.getUpdateService()
+            print(f"Processing Image with ID:{im}")
+            image = conn.getObject("Image", im)
+            channel = 0
+            for i in files:
+                if channel <= 11:
+                    img = imread(i)
+                    thresh = threshold_otsu(img)
+                    binary = img > thresh
+                    mask = omero_rois.mask_from_binary_image(binary, rgba=(255, 0, 0, 150), z=0, c=channel, t=0,
+                                                             text=f"Channel_{channel}", raise_on_no_mask=False)
+                    create_roi(image, [mask])
+                    channel += 1
+                    os.remove(i)
+                else:
+                    files = files[12:]
+                    print(f"Finish mask upload with ID:{im}")
+                    break
+        conn.close()
